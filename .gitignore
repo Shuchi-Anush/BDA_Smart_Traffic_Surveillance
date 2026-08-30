@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Local datasets — stored outside Git
+data/raw/
+data/curated/
+
+# Generated project artifacts
+screenshots/
+report/generated/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
