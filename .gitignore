@@ -26,3 +26,4 @@ report/generated/
 .idea/
 .DS_Store
 Thumbs.db
+data/derived/
