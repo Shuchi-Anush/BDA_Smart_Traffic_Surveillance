@@ -1,0 +1,55 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: traffic-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-aistoradmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-local-only}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: traffic-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+    environment:
+      APP_ENV: development
+      DEBUG: "true"
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+      FRONTEND_URL: http://localhost:3000
+      ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-aistoradmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-change-me-local-only}
+      MINIO_SECURE: "false"
+      MINIO_BUCKET: traffic-data
+    depends_on:
+      - minio
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: traffic-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  minio_data:

@@ -7,6 +7,11 @@ __pycache__/
 .venv/
 venv/
 env/
+backend/.venv/
+frontend/node_modules/
+frontend/.next/
+backend/.pytest_cache/
+.pytest_cache/
 
 # Environment variables / secrets
 .env
@@ -16,6 +21,7 @@ env/
 # Local datasets — stored outside Git
 data/raw/
 data/curated/
+data/derived/
 
 # Generated project artifacts
 screenshots/
@@ -26,4 +32,3 @@ report/generated/
 .idea/
 .DS_Store
 Thumbs.db
-data/derived/
