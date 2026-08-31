@@ -44,13 +44,24 @@ Expected services:
 
 Open the MinIO Console at [http://localhost:9001](http://localhost:9001) using the Docker runtime credentials configured for the project environment.
 
-Then inspect the bucket `traffic-data` and verify objects under:
+Then inspect the live MinIO buckets and verify the assigned object-store layout:
 
-- raw/
-- derived/
-- reports/
+- traffic-data
+- cctv
+- vehicle-images
+- traffic-sensors
+- gps-logs
+- incident-reports
 
-Use the API to prove actual object retrieval and metadata exposure.
+Representative live examples include:
+
+- cctv/junction-01/DLR_UT_120230_120300.mp4
+- vehicle-images/representative/vehicle-01.jpg
+- traffic-sensors/sensor-readings/smart_traffic_management_dataset.csv
+- gps-logs/kolkata/ds 1 F 20220108-114848.txt
+- incident-reports/speed-violations/speed-violations-demo.json
+
+Use the existing API to prove retrieval and metadata exposure.
 
 ## 5. Dataset review
 
@@ -79,11 +90,26 @@ Use the Swagger UI at [http://localhost:8000/docs](http://localhost:8000/docs) o
 - /api/v1/map
 - /api/v1/video
 - /api/v1/reports
+- /api/v1/storage/buckets
 - /api/v1/storage/objects
 - /api/v1/storage/object
 - /api/v1/storage/retrieval
 
-## 7. Shutdown
+Example demo retrievals:
+
+- /api/v1/storage/retrieval?bucket=vehicle-images&key=representative/vehicle-01.jpg
+- /api/v1/storage/retrieval?bucket=cctv&key=junction-01/DLR_UT_120230_120300.mp4
+- /api/v1/storage/retrieval?bucket=incident-reports&key=speed-violations/speed-violations-demo.json
+
+## 7. Assignment requirement mapping
+
+- TASK 1: Existing storage analysis
+- TASK 2: MinIO installation, bucket creation, dataset upload, verification
+- TASK 3: Bucket architecture for CCTV, vehicle images, traffic sensors, GPS logs, incident reports
+- TASK 4: MinIO metadata exposure for camera ID, junction name, vehicle number, timestamp, vehicle type, speed, traffic density
+- TASK 5: Retrieval demonstrations for vehicle image, CCTV footage, and speed violation report
+
+## 8. Shutdown
 
 ```powershell
 docker compose down --remove-orphans

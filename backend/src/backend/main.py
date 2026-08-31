@@ -22,7 +22,7 @@ from backend.data_pipeline import (
     summarize_vehicle_data,
     summarize_video_data,
 )
-from backend.storage import StorageService
+from backend.storage import StorageService, ensure_required_project_buckets
 
 
 def resolve_dataset_path() -> Path:
@@ -115,6 +115,7 @@ def create_app() -> FastAPI:
     async def ready() -> dict[str, Any]:
         minio_status = storage_service.health_check()
         bucket_ready = storage_service.ensure_bucket()
+        required_buckets = ensure_required_project_buckets(storage_service)
         ingestion = ingest_available_sources() if bucket_ready else {"ingested": [], "count": 0}
         return {
             "status": "ok" if minio_status["status"] == "ok" and bucket_ready else "degraded",
@@ -122,6 +123,7 @@ def create_app() -> FastAPI:
             "environment": settings.app_env,
             "minio": minio_status,
             "bucket_ready": bucket_ready,
+            "required_buckets": required_buckets,
             "ingestion": ingestion,
         }
 
@@ -148,28 +150,43 @@ def create_app() -> FastAPI:
         sources = list_data_sources()
         return {"count": len(sources), "sources": sources}
 
-    @app.get(f"{settings.api_v1_prefix}/storage/objects")
-    async def storage_objects(prefix: str = "") -> dict[str, Any]:
-        objects = storage_service.list_objects(prefix=prefix)
+    @app.get(f"{settings.api_v1_prefix}/storage/buckets")
+    async def storage_buckets() -> dict[str, Any]:
+        required_result = ensure_required_project_buckets(storage_service)
+        buckets = storage_service.list_buckets()
         return {
-            "bucket": settings.minio_bucket,
+            "count": len(buckets),
+            "buckets": buckets,
+            "required": ["cctv", "vehicle-images", "traffic-sensors", "gps-logs", "incident-reports"],
+            "bootstrap": required_result,
+        }
+
+    @app.get(f"{settings.api_v1_prefix}/storage/objects")
+    async def storage_objects(prefix: str = "", bucket: str | None = None) -> dict[str, Any]:
+        target_bucket = bucket or settings.minio_bucket
+        objects = storage_service.list_objects(prefix=prefix, bucket_name=target_bucket)
+        return {
+            "bucket": target_bucket,
             "prefix": prefix,
             "count": len(objects),
             "objects": objects,
         }
 
     @app.get(f"{settings.api_v1_prefix}/storage/object")
-    async def storage_object(key: str | None = None) -> dict[str, Any]:
+    async def storage_object(key: str | None = None, bucket: str | None = None) -> dict[str, Any]:
         if not key:
             return {"status": "error", "message": "A MinIO object key is required."}
-        details = storage_service.get_object_metadata(key)
+        details = storage_service.get_object_metadata(key, bucket_name=bucket)
         return details
 
     @app.get(f"{settings.api_v1_prefix}/storage/retrieval")
-    async def storage_retrieval(key: str | None = None) -> dict[str, Any]:
+    async def storage_retrieval(key: str | None = None, bucket: str | None = None) -> dict[str, Any]:
         if not key:
             return {"status": "error", "message": "A MinIO object key is required."}
-        details = storage_service.get_object(key)
+        target_bucket = bucket or settings.minio_bucket
+        details = storage_service.get_object(key, bucket_name=target_bucket)
+        if details["status"] == "missing":
+            return details
         return details
 
     @app.get(f"{settings.api_v1_prefix}/analytics/summary")

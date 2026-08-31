@@ -52,20 +52,73 @@ The active project runtime uses the Docker Compose MinIO configuration defined i
 - /api/v1/map
 - /api/v1/video
 - /api/v1/reports
+- /api/v1/storage/buckets
 - /api/v1/storage/objects
 - /api/v1/storage/object
 - /api/v1/storage/retrieval
 
+## Object storage architecture
+
+The live Docker MinIO runtime currently contains these buckets:
+
+- traffic-data
+- cctv
+- vehicle-images
+- traffic-sensors
+- gps-logs
+- incident-reports
+
+Representative objects in the active project runtime include:
+
+- cctv/junction-01/DLR_UT_120230_120300.mp4
+- vehicle-images/representative/vehicle-01.jpg
+- traffic-sensors/sensor-readings/smart_traffic_management_dataset.csv
+- gps-logs/kolkata/ds 1 F 20220108-114848.txt
+- incident-reports/speed-violations/speed-violations-demo.json
+
+## Assignment task coverage
+
+### TASK 1 — Existing storage analysis
+
+The pipeline uses raw CSV, GPS trajectory, and video sources. Object storage is required to keep unstructured and semi-structured data alongside processed analytics and reports.
+
+### TASK 2 — MinIO implementation
+
+The active runtime uses Docker Compose MinIO for the project. Buckets are created on demand and verified through the backend and the MinIO API.
+
+### TASK 3 — Bucket architecture
+
+The application distinguishes between the preserved traffic-data bucket and the assignment buckets for CCTV, vehicle images, traffic sensor readings, GPS logs, and incident reports.
+
+### TASK 4 — Object metadata
+
+Representative object metadata is stored in MinIO using S3 metadata keys such as:
+
+- x-amz-meta-camera-id
+- x-amz-meta-junction-name
+- x-amz-meta-vehicle-number
+- x-amz-meta-timestamp
+- x-amz-meta-vehicle-type
+- x-amz-meta-speed
+- x-amz-meta-traffic-density
+
+### TASK 5 — Data retrieval
+
+The backend retrieval API can fetch objects from the required buckets using the existing endpoint:
+
+- /api/v1/storage/retrieval?bucket=...&key=...
+
 ## Demo sequence
 
-1. Start Docker stack.
-2. Confirm MinIO bucket traffic-data is present.
+1. Start the Docker stack.
+2. Confirm all six MinIO buckets are present.
 3. Validate backend health and readiness.
-4. Confirm real datasets uploaded to MinIO.
-5. Open the dashboard.
-6. Check traffic, vehicle, incident, anomaly, signal, map, video, and report views.
-7. Retrieve an object from MinIO through the API.
-8. Review generated report artifacts.
+4. Check the storage bucket list and object inventory.
+5. Retrieve the CCTV MP4 object from cctv.
+6. Retrieve the vehicle image from vehicle-images.
+7. Retrieve the speed violation JSON from incident-reports.
+8. Inspect the MinIO metadata for object-level context.
+9. Open the dashboard and confirm frontend system views remain operational.
 
 ## Important notes
 
