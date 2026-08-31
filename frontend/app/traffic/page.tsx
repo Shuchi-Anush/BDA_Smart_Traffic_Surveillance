@@ -3,18 +3,21 @@
 import { useEffect, useState } from "react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ChartCard, DataTable, EmptyState, ErrorState, LoadingState, PageContainer, SectionHeader, StatCard } from "@/components/ui";
-import { fetchSummary } from "@/lib/traffic-api";
-import type { ApiSummary } from "@/types/traffic";
+import { fetchSummary, fetchVehicles } from "@/lib/traffic-api";
+import type { ApiSummary, VehicleSummary } from "@/types/traffic";
 
 export default function TrafficPage() {
   const [summary, setSummary] = useState<ApiSummary | null>(null);
+  const [vehicles, setVehicles] = useState<VehicleSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadTraffic() {
       try {
-        setSummary(await fetchSummary());
+        const [summaryData, vehicleData] = await Promise.all([fetchSummary(), fetchVehicles()]);
+        setSummary(summaryData);
+        setVehicles(vehicleData);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Unable to load traffic data.");
       } finally {
@@ -31,7 +34,7 @@ export default function TrafficPage() {
         {loading ? <LoadingState message="Loading traffic analytics…" /> : null}
         {!loading && error ? <ErrorState message={error} /> : null}
 
-        {!loading && summary ? (
+        {!loading && summary && vehicles ? (
           <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <StatCard label="Traffic Volume" value={`${summary.avg_traffic_volume.toFixed(1)}`} hint="avg veh/hr" tone="cyan" />
@@ -62,11 +65,11 @@ export default function TrafficPage() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <ChartCard title="Vehicle composition" subtitle="Available dataset columns">
+              <ChartCard title="Vehicle composition" subtitle="Actual structured vehicle counts from the live dataset">
                 <div className="space-y-3 text-sm text-slate-300">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2"><span>Cars</span><span className="font-medium text-white">Awaiting dedicated vehicle API</span></div>
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2"><span>Trucks</span><span className="font-medium text-white">Awaiting dedicated vehicle API</span></div>
-                  <div className="flex items-center justify-between"><span>Bikes</span><span className="font-medium text-white">Awaiting dedicated vehicle API</span></div>
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2"><span>Cars</span><span className="font-medium text-white">{vehicles.cars.toLocaleString()}</span></div>
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2"><span>Trucks</span><span className="font-medium text-white">{vehicles.trucks.toLocaleString()}</span></div>
+                  <div className="flex items-center justify-between"><span>Bikes</span><span className="font-medium text-white">{vehicles.bikes.toLocaleString()}</span></div>
                 </div>
               </ChartCard>
 

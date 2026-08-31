@@ -137,7 +137,8 @@ def create_app() -> FastAPI:
             "Kolkata_Data_PMC_paper_TrafficCountEstimationUsingCrowdSourcedTrajectory-v0.1.zip",
             "DLR_UT_120230_120300.mp4",
         ]
-        return {"datasets": files, "available": [file for file in files if (Path(__file__).resolve().parents[3] / "data" / "raw" / file).exists()]}
+        raw_root = raw_data_root()
+        return {"datasets": files, "available": [file for file in files if (raw_root / file).exists()]}
 
     @app.get(f"{settings.api_v1_prefix}/data-sources")
     async def data_sources() -> dict[str, Any]:
@@ -146,6 +147,30 @@ def create_app() -> FastAPI:
             ingest_available_sources()
         sources = list_data_sources()
         return {"count": len(sources), "sources": sources}
+
+    @app.get(f"{settings.api_v1_prefix}/storage/objects")
+    async def storage_objects(prefix: str = "") -> dict[str, Any]:
+        objects = storage_service.list_objects(prefix=prefix)
+        return {
+            "bucket": settings.minio_bucket,
+            "prefix": prefix,
+            "count": len(objects),
+            "objects": objects,
+        }
+
+    @app.get(f"{settings.api_v1_prefix}/storage/object")
+    async def storage_object(key: str | None = None) -> dict[str, Any]:
+        if not key:
+            return {"status": "error", "message": "A MinIO object key is required."}
+        details = storage_service.get_object_metadata(key)
+        return details
+
+    @app.get(f"{settings.api_v1_prefix}/storage/retrieval")
+    async def storage_retrieval(key: str | None = None) -> dict[str, Any]:
+        if not key:
+            return {"status": "error", "message": "A MinIO object key is required."}
+        details = storage_service.get_object(key)
+        return details
 
     @app.get(f"{settings.api_v1_prefix}/analytics/summary")
     async def analytics_summary() -> dict[str, Any]:

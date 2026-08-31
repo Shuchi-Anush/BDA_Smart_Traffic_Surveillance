@@ -78,6 +78,60 @@ class StorageService:
         except Exception:
             return []
 
+    def list_objects(self, prefix: str = "") -> list[dict[str, Any]]:
+        try:
+            self.ensure_bucket()
+            objects: list[dict[str, Any]] = []
+            for obj in self.client.list_objects(self.bucket_name, prefix=prefix, recursive=True):
+                objects.append({
+                    "key": obj.object_name,
+                    "size": obj.size,
+                    "last_modified": getattr(obj, "last_modified", None).isoformat() if getattr(obj, "last_modified", None) is not None else None,
+                    "etag": getattr(obj, "etag", None),
+                })
+            return objects
+        except Exception:
+            return []
+
+    def get_object_metadata(self, object_name: str) -> dict[str, Any]:
+        try:
+            obj = self.client.stat_object(self.bucket_name, object_name)
+            return {
+                "status": "available",
+                "key": object_name,
+                "bucket": self.bucket_name,
+                "size": obj.size,
+                "etag": obj.etag,
+                "last_modified": obj.last_modified.isoformat() if getattr(obj, "last_modified", None) is not None else None,
+            }
+        except Exception as exc:
+            return {
+                "status": "missing",
+                "key": object_name,
+                "bucket": self.bucket_name,
+                "error": str(exc),
+            }
+
+    def get_object(self, object_name: str) -> dict[str, Any]:
+        try:
+            obj = self.client.get_object(self.bucket_name, object_name)
+            data = obj.read()
+            return {
+                "status": "available",
+                "key": object_name,
+                "bucket": self.bucket_name,
+                "size": len(data),
+                "content_type": obj.headers.get("Content-Type", "application/octet-stream") if hasattr(obj, "headers") else "application/octet-stream",
+                "preview": data[:600].decode("utf-8", errors="replace"),
+            }
+        except Exception as exc:
+            return {
+                "status": "missing",
+                "key": object_name,
+                "bucket": self.bucket_name,
+                "error": str(exc),
+            }
+
     def health_check(self) -> dict[str, Any]:
         try:
             self.client.list_buckets()
